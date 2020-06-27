@@ -132,13 +132,14 @@ class Game(arcade.Window):
     def on_mouse_press(self, x: float, y: float, button: int, modifiers: int):
         # Create Bullet
         bullet = arcade.Sprite("topdowntanks\\PNG\\Bullets\\bulletGreen_outline.png")
-        if bull
+        if self.upgrade_active:
+            bullet = arcade.Sprite("topdowntanks\\PNG\\Bullets\\bulletRed_outline.png")
 
         # Position the bullet at the player's current location
         start_x = self.player_sprite.center_x
         start_y = self.player_sprite.center_y
-        self.bullet.center_x = start_x
-        self.bullet.center_y = start_y
+        bullet.center_x = start_x
+        bullet.center_y = start_y
 
         # Get the mouse angle
         dest_x = x
@@ -150,14 +151,14 @@ class Game(arcade.Window):
         angle = math.atan2(y_diff, x_diff)
 
         # Move the Bullet facing its destination
-        self.bullet.angle = math.degrees(angle) - 90
+        bullet.angle = math.degrees(angle) - 90
 
         # Changes the Bullet Velocity
-        self.bullet.change_x = math.cos(angle) * BULLET_SPEED
-        self.bullet.change_y = math.sin(angle) * BULLET_SPEED
+        bullet.change_x = math.cos(angle) * BULLET_SPEED
+        bullet.change_y = math.sin(angle) * BULLET_SPEED
 
         # Append the Bullets to the list
-        self.bullet_list.append(self.bullet)
+        self.bullet_list.append(bullet)
 
     def on_key_press(self, key, modifiers):
         # Movement when key is pressed
@@ -258,7 +259,6 @@ class Game(arcade.Window):
             self.power_up_timer += delta_time
             if self.power_up_timer > BULLET_UPGRADE_TIME:
                 self.upgrade_active = False
-                self.bullet = arcade.Sprite("topdowntanks\\PNG\\Bullets\\bulletGreen_outline.png")
                 self.power_up_timer = 0
 
     def on_update(self, delta_time: float):
@@ -297,6 +297,9 @@ class Game(arcade.Window):
 
 
 class Player(arcade.Sprite):
+    def __init__(self, *args):
+        super().__init__(*args)
+        self.fuel = 100
 
     def update(self):
 
