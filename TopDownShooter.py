@@ -23,6 +23,8 @@ SPEED_BONUS = 3
 SPEED_BOOST_TIME = 5
 TANK_HEALTH = 3
 BULLET_UPGRADE_TIME = 10
+FUEL_LIMIT = 20
+FUEL = 20
 
 
 class Game(arcade.Window):
@@ -40,6 +42,7 @@ class Game(arcade.Window):
         self.speed_power_up_list = None
         self.health_power_up_list = None
         self.bullet_upgrade_list = None
+        self.fuel_power_up_list = None
 
         # Player Stuffs
         self.player_sprite = None
@@ -47,6 +50,7 @@ class Game(arcade.Window):
         self.speed_sprite = None
         self.health_sprite = None
         self.bullet_upgrade_sprite = None
+        self.fuel_sprite = None
 
         # Background
         # self.background = None
@@ -62,6 +66,9 @@ class Game(arcade.Window):
         self.power_up_timer = 0
         self.upgrade_active = False
 
+        self.fuel_bool = False
+        self.fuel_timer = 0
+
     def setup(self):
         """ Fill out the things we initialized """
 
@@ -73,6 +80,7 @@ class Game(arcade.Window):
         self.speed_power_up_list = arcade.SpriteList()
         self.health_power_up_list = arcade.SpriteList()
         self.bullet_upgrade_list = arcade.SpriteList()
+        self.fuel_power_up_list = arcade.SpriteList()
 
         # Loads in the background
         # self.background = arcade.load_texture("Grass.jpg")
@@ -99,6 +107,10 @@ class Game(arcade.Window):
         self.bullet_upgrade_sprite.center_x = 400
         self.bullet_upgrade_sprite.center_y = 100
 
+        self.fuel_sprite = arcade.Sprite("shooting-gallery-pack\\PNG\\Objects\\target_red2.png")
+        self.fuel_sprite.center_x = 400
+        self.fuel_sprite.center_y = 600
+
         x_start = 100
         i = 0
         while i < 7:
@@ -115,6 +127,7 @@ class Game(arcade.Window):
         self.speed_power_up_list.append(self.speed_sprite)
         self.health_power_up_list.append(self.health_sprite)
         self.bullet_upgrade_list.append(self.bullet_upgrade_sprite)
+        self.fuel_power_up_list.append(self.fuel_sprite)
         arcade.set_background_color(arcade.color.BLACK)
 
     def on_draw(self):
@@ -128,6 +141,7 @@ class Game(arcade.Window):
         self.speed_power_up_list.draw()
         self.health_power_up_list.draw()
         self.bullet_upgrade_list.draw()
+        self.fuel_power_up_list.draw()
 
     def on_mouse_press(self, x: float, y: float, button: int, modifiers: int):
         # Create Bullet
@@ -164,8 +178,10 @@ class Game(arcade.Window):
         # Movement when key is pressed
         if key == arcade.key.UP or key == arcade.key.W:
             self.up_pressed = True
+            self.fuel_bool = True
         elif key == arcade.key.DOWN or key == arcade.key.S:
             self.down_pressed = True
+            self.fuel_bool = True
         elif key == arcade.key.LEFT or key == arcade.key.A:
             self.left_pressed = True
         elif key == arcade.key.RIGHT or key == arcade.key.D:
@@ -175,8 +191,10 @@ class Game(arcade.Window):
         # Stops movement when key is released
         if key == arcade.key.UP or key == arcade.key.W:
             self.up_pressed = False
+            self.fuel_bool = False
         elif key == arcade.key.DOWN or key == arcade.key.S:
             self.down_pressed = False
+            self.fuel_bool = False
         elif key == arcade.key.LEFT or key == arcade.key.A:
             self.left_pressed = False
         elif key == arcade.key.RIGHT or key == arcade.key.D:
@@ -261,6 +279,28 @@ class Game(arcade.Window):
                 self.upgrade_active = False
                 self.power_up_timer = 0
 
+    def fuel_system(self, delta_time):
+        global FUEL_LIMIT
+        global FUEL
+        global PLAYER_MOVEMENT_SPEED
+
+        if self.fuel_bool:
+            self.fuel_timer += delta_time
+            FUEL = FUEL_LIMIT - self.fuel_timer
+            if self.fuel_timer > FUEL_LIMIT:
+                PLAYER_MOVEMENT_SPEED = 0
+                self.fuel_timer = 20
+
+        fuel_hit_list = arcade.check_for_collision_with_list(self.player_sprite, self.fuel_power_up_list)
+
+        for power_up in fuel_hit_list:
+            power_up.kill()
+
+        if len(fuel_hit_list) > 0:
+            self.fuel_timer = self.fuel_timer - 20
+            if self.fuel_timer < 0:
+                self.fuel_timer = 0
+
     def on_update(self, delta_time: float):
 
         # Calculate speed based on the keys pressed
@@ -290,16 +330,18 @@ class Game(arcade.Window):
 
         self.bullet_logic()
         self.power_up_logic(delta_time)
+        self.fuel_system(delta_time)
 
         # Update the player and bullet lists
         self.player_list.update()
         self.bullet_list.update()
 
+        print(FUEL)
+
 
 class Player(arcade.Sprite):
     def __init__(self, *args):
         super().__init__(*args)
-        self.fuel = 100
 
     def update(self):
 
