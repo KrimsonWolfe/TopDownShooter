@@ -73,10 +73,6 @@ class Game(arcade.Window):
         self.speed_power_up_list = arcade.SpriteList()
         self.health_power_up_list = arcade.SpriteList()
         self.bullet_upgrade_list = arcade.SpriteList()
-
-        # Loads in the background
-        # self.background = arcade.load_texture("Grass.jpg")
-
         # Set up the player sprites
         self.player_sprite = Player("topdowntanks\\PNG\\Tanks\\tankGreen_outline.png", TANK_SCALING)
         self.player_sprite.center_x = 400
@@ -100,16 +96,13 @@ class Game(arcade.Window):
         self.bullet_upgrade_sprite.center_y = 100
 
         x_start = 100
-        i = 0
-        while i < 7:
+        for _ in range(7):
             duck = arcade.Sprite("shooting-gallery-pack\\PNG\\Objects\\duck_target_yellow.png", TARGET_SCALING)
 
             duck.center_x = x_start
             duck.center_y = 400
             self.target_list.append(duck)
-            x_start = x_start + 100
-            i = i + 1
-
+            x_start += 100
         self.player_list.append(self.player_sprite)
         self.player_list.append(self.barrel_sprite)
         self.speed_power_up_list.append(self.speed_sprite)
@@ -162,24 +155,24 @@ class Game(arcade.Window):
 
     def on_key_press(self, key, modifiers):
         # Movement when key is pressed
-        if key == arcade.key.UP or key == arcade.key.W:
+        if key in [arcade.key.UP, arcade.key.W]:
             self.up_pressed = True
-        elif key == arcade.key.DOWN or key == arcade.key.S:
+        elif key in [arcade.key.DOWN, arcade.key.S]:
             self.down_pressed = True
-        elif key == arcade.key.LEFT or key == arcade.key.A:
+        elif key in [arcade.key.LEFT, arcade.key.A]:
             self.left_pressed = True
-        elif key == arcade.key.RIGHT or key == arcade.key.D:
+        elif key in [arcade.key.RIGHT, arcade.key.D]:
             self.right_pressed = True
 
     def on_key_release(self, key, modifiers):
         # Stops movement when key is released
-        if key == arcade.key.UP or key == arcade.key.W:
+        if key in [arcade.key.UP, arcade.key.W]:
             self.up_pressed = False
-        elif key == arcade.key.DOWN or key == arcade.key.S:
+        elif key in [arcade.key.DOWN, arcade.key.S]:
             self.down_pressed = False
-        elif key == arcade.key.LEFT or key == arcade.key.A:
+        elif key in [arcade.key.LEFT, arcade.key.A]:
             self.left_pressed = False
-        elif key == arcade.key.RIGHT or key == arcade.key.D:
+        elif key in [arcade.key.RIGHT, arcade.key.D]:
             self.right_pressed = False
 
     def on_mouse_motion(self, x: float, y: float, dx: float, dy: float):
@@ -303,11 +296,11 @@ class Player(arcade.Sprite):
 
     def update(self):
 
-        # Stops from moving off of the screen
         self.center_x += self.change_x
         self.center_y += self.change_y
         self.angle += self.change_angle
 
+        # Stops from moving off of the screen
         if self.left < 5:
             self.left = 5
         elif self.right > SCREEN_WIDTH - 5:
