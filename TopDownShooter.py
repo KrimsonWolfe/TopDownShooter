@@ -12,15 +12,15 @@ Targets to shoot
 Add barrel and barrel rotations
 """
 
-SCREEN_WIDTH = 800
-SCREEN_HEIGHT = 600
+SCREEN_WIDTH = 1920
+SCREEN_HEIGHT = 1088
 SCREEN_TITLE = "Topdown"
 BULLET_SPEED = 10
 PLAYER_MOVEMENT_SPEED = 2.5
 TANK_SCALING = 1
-TARGET_SCALING = 0.5
-SPEED_BONUS = 3
-SPEED_BOOST_TIME = 5
+TARGET_SCALING = 1
+SPEED_BONUS = 25
+SPEED_BOOST_TIME = 20
 TANK_HEALTH = 3
 BULLET_UPGRADE_TIME = 10
 FUEL_LIMIT = 20
@@ -32,12 +32,13 @@ class Game(arcade.Window):
 
     def __init__(self):
 
-        super().__init__(SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_TITLE)
+        super().__init__(SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_TITLE, resizable=True)
 
         # Sprite list
-        # self.wall_list = None
+        self.wall_list = None
         self.bullet_list = None
         self.player_list = None
+        self.physics_engine = None
         self.target_list = None
         self.speed_power_up_list = None
         self.health_power_up_list = None
@@ -71,9 +72,8 @@ class Game(arcade.Window):
 
     def setup(self):
         """ Fill out the things we initialized """
-
         # Sprite list
-        # self.wall_list = arcade.SpriteList()
+        self.wall_list = arcade.SpriteList()
         self.bullet_list = arcade.SpriteList()
         self.player_list = arcade.SpriteList()
         self.target_list = arcade.SpriteList()
@@ -82,9 +82,12 @@ class Game(arcade.Window):
         self.bullet_upgrade_list = arcade.SpriteList()
         self.fuel_power_up_list = arcade.SpriteList()
 
+        map = arcade.read_tiled_map("map2.tmx")
+        self.wall_list = arcade.generate_sprites(map,"wall_layer",1,)
+        self.target_list = arcade.generate_sprites(map, "target_layer",1)
+        
         # Loads in the background
         # self.background = arcade.load_texture("Grass.jpg")
-
         # Set up the player sprites
         self.player_sprite = Player("topdowntanks\\PNG\\Tanks\\tankGreen_outline.png", TANK_SCALING)
         self.player_sprite.center_x = 400
@@ -112,16 +115,31 @@ class Game(arcade.Window):
         self.fuel_sprite.center_y = 600
 
         x_start = 100
-        i = 0
-        while i < 7:
+        for _ in range(7):
             duck = arcade.Sprite("shooting-gallery-pack\\PNG\\Objects\\duck_target_yellow.png", TARGET_SCALING)
 
             duck.center_x = x_start
             duck.center_y = 400
             self.target_list.append(duck)
-            x_start = x_start + 100
-            i = i + 1
-
+            x_start += 100
+        
+        # Create rows of boxes
+        """for x in range(5):
+            wall = arcade.Sprite("shooting-gallery-pack\\PNG\\Stall\\bg_wood.png", TARGET_SCALING)
+            wall.center_x = x * 125
+            wall.center_y = 500
+            self.wall_list.append(wall)
+        
+        # Create collum of boxes
+        for y in range(3):
+            wall = arcade.Sprite("shooting-gallery-pack\\PNG\\Stall\\bg_wood.png", TARGET_SCALING)
+            wall.center_x = 500
+            wall.center_y = y * 125
+            self.wall_list.append(wall)"""
+        
+        # Physics collision engine
+        self.physics_engine = arcade.PhysicsEngineSimple(self.player_sprite, self.wall_list)
+        
         self.player_list.append(self.player_sprite)
         self.player_list.append(self.barrel_sprite)
         self.speed_power_up_list.append(self.speed_sprite)
@@ -136,7 +154,7 @@ class Game(arcade.Window):
 
         self.bullet_list.draw()
         self.player_list.draw()
-        # self.wall_list.draw()
+        self.wall_list.draw()
         self.target_list.draw()
         self.speed_power_up_list.draw()
         self.health_power_up_list.draw()
@@ -176,28 +194,26 @@ class Game(arcade.Window):
 
     def on_key_press(self, key, modifiers):
         # Movement when key is pressed
-        if key == arcade.key.UP or key == arcade.key.W:
+        if key in [arcade.key.UP, arcade.key.W]:
             self.up_pressed = True
-            self.fuel_bool = True
-        elif key == arcade.key.DOWN or key == arcade.key.S:
+        elif key in [arcade.key.DOWN, arcade.key.S]:
             self.down_pressed = True
-            self.fuel_bool = True
-        elif key == arcade.key.LEFT or key == arcade.key.A:
+        elif key in [arcade.key.LEFT, arcade.key.A]:
             self.left_pressed = True
-        elif key == arcade.key.RIGHT or key == arcade.key.D:
+        elif key in [arcade.key.RIGHT, arcade.key.D]:
             self.right_pressed = True
 
     def on_key_release(self, key, modifiers):
         # Stops movement when key is released
-        if key == arcade.key.UP or key == arcade.key.W:
+        if key in [arcade.key.UP, arcade.key.W]:
             self.up_pressed = False
-            self.fuel_bool = False
-        elif key == arcade.key.DOWN or key == arcade.key.S:
+
+        elif key in [arcade.key.DOWN, arcade.key.S]:
             self.down_pressed = False
-            self.fuel_bool = False
-        elif key == arcade.key.LEFT or key == arcade.key.A:
+        elif key in [arcade.key.LEFT, arcade.key.A]:
+
             self.left_pressed = False
-        elif key == arcade.key.RIGHT or key == arcade.key.D:
+        elif key in [arcade.key.RIGHT, arcade.key.D]:
             self.right_pressed = False
 
     def on_mouse_motion(self, x: float, y: float, dx: float, dy: float):
@@ -220,9 +236,13 @@ class Game(arcade.Window):
 
             # Check this bullet to see if it hit a coin
             hit_list = arcade.check_for_collision_with_list(bullet, self.target_list)
+            wall_hit_list = arcade.check_for_collision_with_list(bullet, self.wall_list)
 
             # If it did, get rid of the bullet
             if len(hit_list) > 0:
+                bullet.kill()
+
+            if len(wall_hit_list) > 0:
                 bullet.kill()
 
             # For every coin we hit, add to the score and remove the coin
@@ -335,8 +355,9 @@ class Game(arcade.Window):
         # Update the player and bullet lists
         self.player_list.update()
         self.bullet_list.update()
-
-        print(FUEL)
+        
+        # Update Physics Engine
+        self.physics_engine.update()
 
 
 class Player(arcade.Sprite):
@@ -345,11 +366,11 @@ class Player(arcade.Sprite):
 
     def update(self):
 
-        # Stops from moving off of the screen
         self.center_x += self.change_x
         self.center_y += self.change_y
         self.angle += self.change_angle
 
+        # Stops from moving off of the screen
         if self.left < 5:
             self.left = 5
         elif self.right > SCREEN_WIDTH - 5:
